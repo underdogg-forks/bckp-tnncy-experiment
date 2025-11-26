@@ -11,8 +11,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $this->call(SystemPermissionsSeeder::class);
-        $this->call(BuildDatabasesForTenants::class);
         $this->call(UsersSeeder::class);
+        $this->call(BuildDatabasesForTenants::class);
     }
 }
