@@ -41,11 +41,6 @@ return [
             'provider' => 'users',
         ],
 
-        'customer' => [
-            'driver' => 'session',
-            'provider' => 'customer',
-        ],
-
         'tenant' => [
             'driver' => 'jwt',
             'provider' => 'tenant-users',
@@ -96,11 +91,6 @@ return [
         'tenant-users' => [
             'driver' => 'eloquent',
             'model' => App\Models\Tenant\User::class,
-        ],
-
-        'customer' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\System\Customer::class,
         ],
 
         // 'users' => [

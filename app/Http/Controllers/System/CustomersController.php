@@ -14,42 +14,89 @@ use App\Models\System\Permission;
 use App\Models\System\Customer;
 use Illuminate\Http\Request;
 use App\Models\Tenant\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CustomersController extends Controller
 {
 
-    private function makeDBForCustomer($customer, $domain)
+    private function makeDBForCustomer($customer, $domain, $adminEmail = null, $adminName = null)
     {
-        // Create New website that have db hash name.
-        $website = new Website();
-        app(WebsiteRepository::class)->create($website);
-
-        // Create New hostname that include the domain and the conication between the db and the domain.
-        $hostname = new Hostname();
-        $hostname->customer_id = $customer->id;
-        $hostname->fqdn = $domain;
-        app(HostnameRepository::class)->attach($hostname, $website);
-        
-        // Now after created all of that switch to the new tenant and add the data that we need.
         $tenancy = app(Environment::class);
-        $tenancy->tenant($website);
+        
+        try {
+            DB::beginTransaction();
+            
+            // Create New website that have db hash name.
+            $website = new Website();
+            app(WebsiteRepository::class)->create($website);
 
-        $this->makeAdmin($customer);
+            // Create New hostname that include the domain and the conication between the db and the domain.
+            $hostname = new Hostname();
+            $hostname->customer_id = $customer->id;
+            $hostname->fqdn = $domain;
+            app(HostnameRepository::class)->attach($hostname, $website);
+            
+            DB::commit();
+            
+            // Now after created all of that switch to the new tenant and add the data that we need.
+            $tenancy->tenant($website);
 
-        // Switch back to the default config
-        $tenancy->identifyHostname();
+            $adminCredentials = $this->makeAdmin($customer, $adminEmail, $adminName);
+
+            // Switch back to the system context
+            $tenancy->tenant(null);
+            
+            return $adminCredentials;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Reset tenancy to null on failure
+            $tenancy->tenant(null);
+            throw $e;
+        }
     }
 
-    private function makeAdmin($customer)
+    private function makeAdmin($customer, $adminEmail = null, $adminName = null)
     {
         $permissions = $this->permissions($customer);
-        $user = User::create([
-            'name' => 'tenant name',
-            'email' => 'admin@mail.com',
-            'email_verified_at' => now(),
-            'password' => 'password', 
-        ]);
-        $user->givePermissionTo($permissions);
+        
+        // Generate unique admin email if not provided
+        if (!$adminEmail) {
+            $adminEmail = 'admin@' . str_replace(['http://', 'https://', 'www.'], '', $customer->hostname->fqdn ?? $customer->email);
+        }
+        
+        // Generate secure random password
+        $password = Str::random(16);
+        
+        // Generate admin name if not provided
+        if (!$adminName) {
+            $adminName = $customer->name . ' Admin';
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            $user = User::create([
+                'name' => $adminName,
+                'email' => $adminEmail,
+                'email_verified_at' => now(),
+                'password' => $password, // Will be hashed by the mutator
+            ]);
+            
+            $user->givePermissionTo($permissions);
+            
+            DB::commit();
+            
+            // Return credentials for notification/email
+            return [
+                'user' => $user,
+                'email' => $adminEmail,
+                'password' => $password
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     private function permissions($customer)
@@ -100,9 +147,18 @@ class CustomersController extends Controller
         $customer->givePermissionTo($permissions);
         
         // Now Create the database for that customer and contact all of that together
-    
-        $this->makeDBForCustomer($customer, $request->domain);
-        return $customer;
+        $adminCredentials = $this->makeDBForCustomer(
+            $customer, 
+            $request->domain,
+            $request->admin_email ?? null,
+            $request->admin_name ?? null
+        );
+        
+        // Return customer with admin credentials for notification
+        return [
+            'customer' => $customer,
+            'admin_credentials' => $adminCredentials
+        ];
     }
 
     /**
