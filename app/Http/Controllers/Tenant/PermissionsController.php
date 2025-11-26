@@ -22,13 +22,8 @@ class PermissionsController extends Controller
     public function index()
     {
         $customerPermissions = $this->tenantPermissions();
-        $customerUserPermissions = Permission::all();
-        $permissions = [];
-        foreach ($customerUserPermissions as $permission) {
-            if (linearSearch($permission, $customerPermissions)) {
-                array_push($permissions, $permission);
-            }
-        }
-        return $permissions;
+        $customerPermissionNames = $customerPermissions->pluck('name');
+        
+        return Permission::whereIn('name', $customerPermissionNames)->get();
     }
 }
