@@ -6,8 +6,7 @@ use Hyn\Tenancy\Contracts\Repositories\WebsiteRepository;
 use Hyn\Tenancy\Models\Hostname;
 use Hyn\Tenancy\Models\Website;
 use Illuminate\Database\Seeder;
-use App\Models\System\Customer;
-use Spatie\Permission\Models\Permission;
+use App\Models\System\Customers;
 
 
 class BuildDatabasesForTenants extends Seeder
@@ -21,22 +20,14 @@ class BuildDatabasesForTenants extends Seeder
     {
         $customers = [
             [
-                'domain' => 'foo.api.tenancy.localhost',
+                'database' => 'laravel__FooCustomer',
+                'domain' => 'foo.tenancy.localhost',
                 'name' => 'FooCustomer',
                 'email' => 'customer@foo.com'
             ],
         ];
-        $permission = Permission::find(9);
 
         foreach ($customers as $customer) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | CREATE THE CUSTOMER
-            |--------------------------------------------------------------------------
-             */
-            $newCustomer = Customer::create(['name' => $customer['name'], 'email' => $customer['email']]);
-            $newCustomer->givePermissionTo($permission);
 
             /*
             |--------------------------------------------------------------------------
@@ -52,9 +43,23 @@ class BuildDatabasesForTenants extends Seeder
             |--------------------------------------------------------------------------
              */
             $hostname = new Hostname();
-            $hostname->customer_id = $newCustomer->id;
             $hostname->fqdn = $customer['domain'];
             app(HostnameRepository::class)->attach($hostname, $website);
+
+            /*
+            |--------------------------------------------------------------------------
+            | CREATE THE CUSTOMER
+            |--------------------------------------------------------------------------
+             */
+            Customers::create(['name' => $customer['name'], 'email' => $customer['email'], 'id' => $website->id]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAVE THE CUSTOMER WITH HIS HOSTNAME AND WEBSITE
+            |--------------------------------------------------------------------------
+             */
+            // $hostname->customer()->associate($customer)->save();
+            // $website->customer()->associate($customer)->save();
         }
     }
 }
