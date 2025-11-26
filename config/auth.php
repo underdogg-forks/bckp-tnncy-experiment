@@ -41,11 +41,27 @@ return [
             'provider' => 'users',
         ],
 
-        'api' => [
-            'driver' => 'token',
-            'provider' => 'users',
-            'hash' => false,
+        'customer' => [
+            'driver' => 'session',
+            'provider' => 'customer',
         ],
+
+        'tenant' => [
+            'driver' => 'jwt',
+            'provider' => 'tenant-users',
+        ],
+
+        'system' => [
+            'driver' => 'jwt',
+            'provider' => 'system-users',
+        ],
+
+
+        // 'api' => [
+        //     'driver' => 'jwt',
+        //     'provider' => 'users',
+        //     'hash' => false,
+        // ],
     ],
 
     /*
@@ -66,9 +82,25 @@ return [
     */
 
     'providers' => [
+
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\User::class,
+            'model' => App\Models\System\User::class,
+        ],
+
+        'system-users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\System\User::class,
+        ],
+
+        'tenant-users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Tenant\User::class,
+        ],
+
+        'customer' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\System\Customer::class,
         ],
 
         // 'users' => [

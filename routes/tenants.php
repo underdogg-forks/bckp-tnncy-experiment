@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -14,4 +15,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/users', 'UserController@index');
+Route::group(['middleware' => 'tenant.checker'], function () {
+    $namespace = 'App\\Http\\Controllers\\Tenant\\';
+    Route::prefix('api')->namespace($namespace)->group(function () {
+
+        Route::post('login', 'AuthController@login');
+        Route::get('/tenant/permissions', 'PermissionsController@tenantPermissions');
+
+        Route::group(['middleware' => ['auth.guard.checker:tenant', 'jwt.auth']], function () {
+            Route::post('logout', 'AuthController@logout');
+            Route::post('refresh', 'AuthController@refresh');
+            Route::post('user', 'AuthController@user');
+            Route::apiResource('users', 'UserController');
+            Route::get('permissions', 'PermissionsController@index');
+        });
+    });
+});
