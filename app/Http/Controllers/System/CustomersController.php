@@ -10,7 +10,7 @@ use Hyn\Tenancy\Models\Website;
 use Hyn\Tenancy\Environment;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\Permission;
+use App\Models\System\Permission;
 use App\Models\System\Customer;
 use Illuminate\Http\Request;
 use App\Models\Tenant\User;

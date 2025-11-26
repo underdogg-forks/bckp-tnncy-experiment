@@ -19,9 +19,8 @@ class AuthGuardChecker
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        if (Auth::guard($guard)->check($guard)) {
+        if (Auth::guard($guard)->check()) {
             return $next($request);
-        }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 }
