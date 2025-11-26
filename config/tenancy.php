@@ -12,7 +12,7 @@
  * @see https://github.com/hyn/multi-tenant
  */
 
-// use Hyn\Tenancy\Database\Connection;
+use Hyn\Tenancy\Database\Connection;
 use Database\Seeds\Tenant\TenantDatabaseSeeder;
 
 return [
@@ -184,8 +184,8 @@ return [
          * @var system-connection-name The database connection name to use for the global/system database.
          * @var tenant-connection-name The database connection name to use for the tenant database.
          */
-        'system-connection-name' => env('TENANCY_SYSTEM_CONNECTION_NAME', 'system'),
-        'tenant-connection-name' => env('TENANCY_TENANT_CONNECTION_NAME', 'tenant'),
+        'system-connection-name' => env('TENANCY_SYSTEM_CONNECTION_NAME', Connection::DEFAULT_SYSTEM_NAME),
+        'tenant-connection-name' => env('TENANCY_TENANT_CONNECTION_NAME', Connection::DEFAULT_TENANT_NAME),
 
         /**
          * The tenant division mode specifies to what database websites will be
