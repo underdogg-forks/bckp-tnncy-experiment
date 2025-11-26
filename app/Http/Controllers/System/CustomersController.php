@@ -25,6 +25,7 @@ class CustomersController extends Controller
         $tenancy = app(Environment::class);
         
         try {
+            // Create website and hostname on system database
             DB::beginTransaction();
             
             // Create New website that have db hash name.
@@ -42,6 +43,10 @@ class CustomersController extends Controller
             // Now after created all of that switch to the new tenant and add the data that we need.
             $tenancy->tenant($website);
 
+            // Reload customer to get the hostname relationship
+            $customer->load('hostname');
+            
+            // Create admin user on tenant database (has its own transaction)
             $adminCredentials = $this->makeAdmin($customer, $adminEmail, $adminName);
 
             // Switch back to the system context
@@ -49,7 +54,10 @@ class CustomersController extends Controller
             
             return $adminCredentials;
         } catch (\Exception $e) {
-            DB::rollBack();
+            // Rollback only if we're still in system transaction
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             // Reset tenancy to null on failure
             $tenancy->tenant(null);
             throw $e;
@@ -73,6 +81,7 @@ class CustomersController extends Controller
             $adminName = $customer->name . ' Admin';
         }
         
+        // Wrap tenant database operations in transaction
         try {
             DB::beginTransaction();
             
