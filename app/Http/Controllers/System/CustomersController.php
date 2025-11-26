@@ -32,7 +32,7 @@ class CustomersController extends Controller
             $website = new Website();
             app(WebsiteRepository::class)->create($website);
 
-            // Create New hostname that include the domain and the conication between the db and the domain.
+            // Create New hostname that include the domain and the connection between the db and the domain.
             $hostname = new Hostname();
             $hostname->customer_id = $customer->id;
             $hostname->fqdn = $domain;
@@ -70,7 +70,11 @@ class CustomersController extends Controller
         
         // Generate unique admin email if not provided
         if (!$adminEmail) {
-            $adminEmail = 'admin@' . str_replace(['http://', 'https://', 'www.'], '', $customer->hostname->fqdn ?? $customer->email);
+            if ($customer->hostname && $customer->hostname->fqdn) {
+                $adminEmail = 'admin@' . str_replace(['http://', 'https://', 'www.'], '', $customer->hostname->fqdn);
+            } else {
+                $adminEmail = 'admin-' . $customer->id . '@' . $customer->email;
+            }
         }
         
         // Generate secure random password
@@ -147,7 +151,7 @@ class CustomersController extends Controller
      */
     public function store(Request $request)
     {
-        // Create Custoemr and give this customer peromissions
+        // Create Customer and give this customer permissions
         $permissions = Permission::whereIn('id', $request->permissions)->get();
         $customer = Customer::create([
             'name' => $request->name,
